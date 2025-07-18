@@ -4,34 +4,18 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Represents the request payload sent to Talon.One for evaluating a customer session.
- */
 public class TalonOneSessionRequest {
-    private String profileId;
-    private List<CartItem> cartItems;
+    private String customerId;
+    private List<Map<String, Object>> cartItems;
     private BigDecimal totalAmount;
-    private Map<String, Object> attributes;
+    private Map<String, Object> sessionAttributes;
 
-    public String getProfileId() { return profileId; }
-    public void setProfileId(String profileId) { this.profileId = profileId; }
-    public List<CartItem> getCartItems() { return cartItems; }
-    public void setCartItems(List<CartItem> cartItems) { this.cartItems = cartItems; }
+    public String getCustomerId() { return customerId; }
+    public void setCustomerId(String customerId) { this.customerId = customerId; }
+    public List<Map<String, Object>> getCartItems() { return cartItems; }
+    public void setCartItems(List<Map<String, Object>> cartItems) { this.cartItems = cartItems; }
     public BigDecimal getTotalAmount() { return totalAmount; }
     public void setTotalAmount(BigDecimal totalAmount) { this.totalAmount = totalAmount; }
-    public Map<String, Object> getAttributes() { return attributes; }
-    public void setAttributes(Map<String, Object> attributes) { this.attributes = attributes; }
-
-    public static class CartItem {
-        private String productId;
-        private int quantity;
-        private BigDecimal price;
-
-        public String getProductId() { return productId; }
-        public void setProductId(String productId) { this.productId = productId; }
-        public int getQuantity() { return quantity; }
-        public void setQuantity(int quantity) { this.quantity = quantity; }
-        public BigDecimal getPrice() { return price; }
-        public void setPrice(BigDecimal price) { this.price = price; }
-    }
+    public Map<String, Object> getSessionAttributes() { return sessionAttributes; }
+    public void setSessionAttributes(Map<String, Object> sessionAttributes) { this.sessionAttributes = sessionAttributes; }
 }
