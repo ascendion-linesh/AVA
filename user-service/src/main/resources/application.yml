@@ -1,3 +1,6 @@
+server:
+  port: 8080
+
 spring:
   datasource:
     url: jdbc:postgresql://localhost:5432/userdb
@@ -11,23 +14,15 @@ spring:
     properties:
       hibernate:
         format_sql: true
+  jackson:
+    serialization:
+      INDENT_OUTPUT: true
 
-server:
-  port: 8080
-
-# Talon.One integration
-# Replace with actual values in production
-# talonone:
-#   api:
-#     url: https://your-company.talon.one
-#     key: your-talonone-api-key
+# Talon.One API configuration
+# Replace with your actual Talon.One API URL and API key
+# Example: https://yourcompany.talon.one
 
 talonone:
   api:
-    url: https://your-company.talon.one
+    url: https://yourcompany.talon.one
     key: your-talonone-api-key
-
-logging:
-  level:
-    root: INFO
-    com.example.userservice: DEBUG
