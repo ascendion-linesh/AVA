@@ -3,73 +3,66 @@ package com.example.userservice.controller;
 import com.example.userservice.dto.UserRequestDTO;
 import com.example.userservice.dto.UserResponseDTO;
 import com.example.userservice.service.UserService;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.Schema;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
-import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import javax.validation.Valid;
 
 @RestController
 @RequestMapping("/users")
-@RequiredArgsConstructor
+@Validated
 public class UserController {
     private final UserService userService;
 
-    @Operation(summary = "Register a new user", description = "Registers a new user and integrates with Talon.One.")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "201", description = "User registered successfully", content = @Content(schema = @Schema(implementation = UserResponseDTO.class))),
-            @ApiResponse(responseCode = "400", description = "Invalid input or email exists", content = @Content)
-    })
+    @Autowired
+    public UserController(UserService userService) {
+        this.userService = userService;
+    }
+
+    /**
+     * Register a new user and integrate with Talon.One
+     */
     @PostMapping
-    public ResponseEntity<UserResponseDTO> registerUser(@Valid @RequestBody UserRequestDTO dto) {
-        UserResponseDTO user = userService.registerUser(dto);
-        return ResponseEntity.status(HttpStatus.CREATED).body(user);
+    public ResponseEntity<UserResponseDTO> registerUser(@Valid @RequestBody UserRequestDTO userRequestDTO) {
+        UserResponseDTO response = userService.registerUser(userRequestDTO);
+        return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
-    @Operation(summary = "Get user by ID")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "User found", content = @Content(schema = @Schema(implementation = UserResponseDTO.class))),
-            @ApiResponse(responseCode = "404", description = "User not found", content = @Content)
-    })
+    /**
+     * Get user by ID
+     */
     @GetMapping("/{id}")
-    public ResponseEntity<UserResponseDTO> getUserById(@Parameter(description = "User ID") @PathVariable Long id) {
-        return ResponseEntity.ok(userService.getUserById(id));
+    public ResponseEntity<UserResponseDTO> getUserById(@PathVariable Long id) {
+        UserResponseDTO response = userService.getUserById(id);
+        return ResponseEntity.ok(response);
     }
 
-    @Operation(summary = "Update user by ID")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "User updated", content = @Content(schema = @Schema(implementation = UserResponseDTO.class))),
-            @ApiResponse(responseCode = "404", description = "User not found", content = @Content)
-    })
+    /**
+     * Update user by ID
+     */
     @PutMapping("/{id}")
-    public ResponseEntity<UserResponseDTO> updateUser(@Parameter(description = "User ID") @PathVariable Long id, @Valid @RequestBody UserRequestDTO dto) {
-        return ResponseEntity.ok(userService.updateUser(id, dto));
+    public ResponseEntity<UserResponseDTO> updateUser(@PathVariable Long id, @Valid @RequestBody UserRequestDTO userRequestDTO) {
+        UserResponseDTO response = userService.updateUser(id, userRequestDTO);
+        return ResponseEntity.ok(response);
     }
 
-    @Operation(summary = "Delete user by ID")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "204", description = "User deleted"),
-            @ApiResponse(responseCode = "404", description = "User not found", content = @Content)
-    })
+    /**
+     * Delete user by ID
+     */
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteUser(@Parameter(description = "User ID") @PathVariable Long id) {
+    public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
         userService.deleteUser(id);
         return ResponseEntity.noContent().build();
     }
 
-    @Operation(summary = "Get user by email")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "User found", content = @Content(schema = @Schema(implementation = UserResponseDTO.class))),
-            @ApiResponse(responseCode = "404", description = "User not found", content = @Content)
-    })
+    /**
+     * Get user by email
+     */
     @GetMapping("/email/{email}")
-    public ResponseEntity<UserResponseDTO> getUserByEmail(@Parameter(description = "User email") @PathVariable String email) {
-        return ResponseEntity.ok(userService.getUserByEmail(email));
+    public ResponseEntity<UserResponseDTO> getUserByEmail(@PathVariable String email) {
+        UserResponseDTO response = userService.getUserByEmail(email);
+        return ResponseEntity.ok(response);
     }
 }
