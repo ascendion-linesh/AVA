@@ -7,7 +7,7 @@ import javax.validation.constraints.Pattern;
 import javax.validation.constraints.PositiveOrZero;
 
 @Entity
-@Table(name = "users")
+@Table(name = "users", uniqueConstraints = {@UniqueConstraint(columnNames = "email")})
 public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -17,10 +17,10 @@ public class User {
     private String name;
 
     @Email(message = "Email should be valid")
-    @Column(unique = true, nullable = false)
+    @NotBlank(message = "Email is mandatory")
     private String email;
 
-    @Pattern(regexp = "^\\+?[0-9]{7,15}$", message = "Invalid phone number")
+    @Pattern(regexp = "^\\+?[0-9. ()-]{7,25}$", message = "Phone number is invalid")
     private String phone;
 
     @PositiveOrZero
@@ -28,17 +28,6 @@ public class User {
 
     @PositiveOrZero
     private Double totalSpent = 0.0;
-
-    // Constructors
-    public User() {}
-
-    public User(String name, String email, String phone) {
-        this.name = name;
-        this.email = email;
-        this.phone = phone;
-        this.totalOrders = 0;
-        this.totalSpent = 0.0;
-    }
 
     // Getters and Setters
     public Long getId() { return id; }
