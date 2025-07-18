@@ -6,38 +6,31 @@ import com.example.userservice.entity.User;
 import com.example.userservice.exception.UserNotFoundException;
 import com.example.userservice.repository.UserRepository;
 import com.example.userservice.talonone.TalonOneClient;
-import org.springframework.beans.factory.annotation.Autowired;
+import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@RequiredArgsConstructor
 public class UserService {
     private final UserRepository userRepository;
     private final TalonOneClient talonOneClient;
 
-    @Autowired
-    public UserService(UserRepository userRepository, TalonOneClient talonOneClient) {
-        this.userRepository = userRepository;
-        this.talonOneClient = talonOneClient;
-    }
-
     @Transactional
-    public UserResponseDTO registerUser(UserRequestDTO requestDTO) {
-        if (userRepository.findByEmail(requestDTO.getEmail()).isPresent()) {
+    public UserResponseDTO registerUser(UserRequestDTO dto) {
+        if (userRepository.findByEmail(dto.getEmail()).isPresent()) {
             throw new IllegalArgumentException("Email already exists");
         }
-        User user = new User();
-        user.setName(requestDTO.getName());
-        user.setEmail(requestDTO.getEmail());
-        user.setPhone(requestDTO.getPhone());
-        user.setTotalOrders(0);
-        user.setTotalSpent(0.0);
-        User savedUser = userRepository.save(user);
-
-        // Integrate with Talon.One
-        talonOneClient.registerUserInTalonOne(savedUser.getId(), savedUser.getEmail(), savedUser.getName());
-
-        return toResponseDTO(savedUser);
+        User user = User.builder()
+                .name(dto.getName())
+                .email(dto.getEmail())
+                .phone(dto.getPhone())
+                .totalOrders(0)
+                .totalSpent(0.0)
+                .build();
+        user = userRepository.save(user);
+        talonOneClient.registerUserInTalonOne(user.getId().toString(), user.getEmail(), user.getName(), user.getPhone());
+        return toResponseDTO(user);
     }
 
     public UserResponseDTO getUserById(Long id) {
@@ -53,31 +46,32 @@ public class UserService {
     }
 
     @Transactional
-    public UserResponseDTO updateUser(Long id, UserRequestDTO requestDTO) {
+    public UserResponseDTO updateUser(Long id, UserRequestDTO dto) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new UserNotFoundException("User not found with id: " + id));
-        user.setName(requestDTO.getName());
-        user.setEmail(requestDTO.getEmail());
-        user.setPhone(requestDTO.getPhone());
-        User updatedUser = userRepository.save(user);
-        return toResponseDTO(updatedUser);
+        user.setName(dto.getName());
+        user.setEmail(dto.getEmail());
+        user.setPhone(dto.getPhone());
+        user = userRepository.save(user);
+        return toResponseDTO(user);
     }
 
     @Transactional
     public void deleteUser(Long id) {
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new UserNotFoundException("User not found with id: " + id));
-        userRepository.delete(user);
+        if (!userRepository.existsById(id)) {
+            throw new UserNotFoundException("User not found with id: " + id);
+        }
+        userRepository.deleteById(id);
     }
 
     private UserResponseDTO toResponseDTO(User user) {
-        UserResponseDTO dto = new UserResponseDTO();
-        dto.setId(user.getId());
-        dto.setName(user.getName());
-        dto.setEmail(user.getEmail());
-        dto.setPhone(user.getPhone());
-        dto.setTotalOrders(user.getTotalOrders());
-        dto.setTotalSpent(user.getTotalSpent());
-        return dto;
+        return UserResponseDTO.builder()
+                .id(user.getId())
+                .name(user.getName())
+                .email(user.getEmail())
+                .phone(user.getPhone())
+                .totalOrders(user.getTotalOrders())
+                .totalSpent(user.getTotalSpent())
+                .build();
     }
 }
