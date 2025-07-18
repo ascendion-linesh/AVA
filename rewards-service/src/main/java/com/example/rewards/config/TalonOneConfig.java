@@ -1,23 +1,24 @@
 package com.example.rewards.config;
 
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Bean;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.web.reactive.function.client.WebClient;
 
 @Configuration
+@ConfigurationProperties(prefix = "talonone")
 public class TalonOneConfig {
-    @Value("${talonone.api.base-url}")
-    private String talonOneBaseUrl;
+    private String apiUrl;
+    private String apiKey;
 
-    @Value("${talonone.api.key}")
-    private String talonOneApiKey;
-
-    @Bean
-    public WebClient talonOneWebClient() {
-        return WebClient.builder()
-                .baseUrl(talonOneBaseUrl)
-                .defaultHeader("Authorization", "ApiKey " + talonOneApiKey)
-                .build();
+    public String getApiUrl() {
+        return apiUrl;
+    }
+    public void setApiUrl(String apiUrl) {
+        this.apiUrl = apiUrl;
+    }
+    public String getApiKey() {
+        return apiKey;
+    }
+    public void setApiKey(String apiKey) {
+        this.apiKey = apiKey;
     }
 }
