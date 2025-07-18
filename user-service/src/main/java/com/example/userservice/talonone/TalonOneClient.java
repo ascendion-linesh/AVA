@@ -1,18 +1,20 @@
 package com.example.userservice.talonone;
 
-import lombok.extern.slf4j.Slf4j;
+import com.example.userservice.entity.User;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.*;
 import org.springframework.stereotype.Component;
-import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.http.*;
 
 import java.util.HashMap;
 import java.util.Map;
 
-@Slf4j
 @Component
 public class TalonOneClient {
+    private static final Logger logger = LoggerFactory.getLogger(TalonOneClient.class);
+
     @Value("${talonone.api.url}")
     private String talonOneApiUrl;
 
@@ -21,30 +23,25 @@ public class TalonOneClient {
 
     private final RestTemplate restTemplate = new RestTemplate();
 
-    public void registerUserInTalonOne(String userId, String email, String name, String phone) {
-        String url = talonOneApiUrl + "/v1/customers";
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.set("Authorization", "ApiKey " + talonOneApiKey);
-
-        Map<String, Object> body = new HashMap<>();
-        body.put("integrationId", userId);
-        body.put("attributes", Map.of(
-                "email", email,
-                "name", name,
-                "phone", phone
-        ));
-
-        HttpEntity<Map<String, Object>> request = new HttpEntity<>(body, headers);
+    public void registerUserInTalonOne(User user) {
         try {
-            ResponseEntity<String> response = restTemplate.postForEntity(url, request, String.class);
-            if (!response.getStatusCode().is2xxSuccessful()) {
-                log.error("Talon.One registration failed: {}", response.getBody());
-                throw new RuntimeException("Failed to register user in Talon.One");
-            }
-        } catch (HttpClientErrorException e) {
-            log.error("Talon.One registration error: {}", e.getResponseBodyAsString());
-            throw new RuntimeException("Talon.One registration error: " + e.getMessage());
+            String url = talonOneApiUrl + "/v1/customers";
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.set("Authorization", "ApiKey " + talonOneApiKey);
+
+            Map<String, Object> body = new HashMap<>();
+            body.put("integrationId", user.getId().toString());
+            body.put("email", user.getEmail());
+            body.put("name", user.getName());
+            body.put("phone", user.getPhone());
+
+            HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, headers);
+            ResponseEntity<String> response = restTemplate.postForEntity(url, entity, String.class);
+            logger.info("Talon.One registration response: {}", response.getStatusCode());
+        } catch (Exception e) {
+            logger.error("Failed to register user in Talon.One: {}", e.getMessage());
+            // Optionally, handle retry or compensation logic here
         }
     }
 }
