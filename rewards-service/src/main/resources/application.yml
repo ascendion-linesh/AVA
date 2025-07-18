@@ -1,0 +1,27 @@
+server:
+  port: 8080
+spring:
+  application:
+    name: rewards-service
+  kafka:
+    consumer:
+      group-id: rewards-service-group
+      auto-offset-reset: earliest
+      bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+    listener:
+      missing-topics-fatal: false
+
+kafka:
+  bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+  group-id: rewards-service-group
+
+talonone:
+  api-url: ${TALONONE_API_URL:https://your-talonone-endpoint.talon.one}
+  api-key: ${TALONONE_API_KEY:your-api-key}
+
+logging:
+  level:
+    root: INFO
+    com.example.rewards: DEBUG
