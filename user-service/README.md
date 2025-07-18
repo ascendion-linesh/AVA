@@ -1,6 +1,106 @@
-# user-service
+# User Service for Loyalty Rewards System
 
-A Spring Boot microservice for user management in a loyalty rewards system, integrating with Talon.One. Handles registration, authentication, retrieval, update, and deletion of users. Uses PostgreSQL for persistence.
+This Spring Boot microservice manages user registration, retrieval, update, and deletion for a loyalty rewards system, with integration to Talon.One for campaign management.
+
+## Features
+- User registration, retrieval by ID/email, update, and deletion
+- Talon.One integration during registration
+- PostgreSQL persistence
+- Input validation, error handling, and security best practices
+- OpenAPI (Swagger) documentation
+- Unit tests for service and repository layers
+
+## API Endpoints
+
+### Register User
+- **POST /users**
+- Request Body:
+```json
+{
+  "name": "John Doe",
+  "email": "john@example.com",
+  "phone": "+1234567890"
+}
+```
+- Response (201):
+```json
+{
+  "id": 1,
+  "name": "John Doe",
+  "email": "john@example.com",
+  "phone": "+1234567890",
+  "totalOrders": 0,
+  "totalSpent": 0.0
+}
+```
+
+### Get User by ID
+- **GET /users/{id}**
+- Response (200):
+```json
+{
+  "id": 1,
+  "name": "John Doe",
+  "email": "john@example.com",
+  "phone": "+1234567890",
+  "totalOrders": 0,
+  "totalSpent": 0.0
+}
+```
+
+### Get User by Email
+- **GET /users/email/{email}**
+- Response (200):
+```json
+{
+  "id": 1,
+  "name": "John Doe",
+  "email": "john@example.com",
+  "phone": "+1234567890",
+  "totalOrders": 0,
+  "totalSpent": 0.0
+}
+```
+
+### Update User
+- **PUT /users/{id}**
+- Request Body:
+```json
+{
+  "name": "Jane Doe",
+  "email": "jane@example.com",
+  "phone": "+1987654321"
+}
+```
+- Response (200):
+```json
+{
+  "id": 1,
+  "name": "Jane Doe",
+  "email": "jane@example.com",
+  "phone": "+1987654321",
+  "totalOrders": 0,
+  "totalSpent": 0.0
+}
+```
+
+### Delete User
+- **DELETE /users/{id}**
+- Response: 204 No Content
+
+## Error Responses
+- 400 Bad Request: Invalid input or duplicate email
+- 404 Not Found: User not found
+- 500 Internal Server Error: Unexpected errors
+
+## Running the Service
+1. Configure PostgreSQL and Talon.One properties in `src/main/resources/application.yml`.
+2. Build and run the application:
+   ```sh
+   mvn clean install
+   mvn spring-boot:run
+   ```
+3. Access Swagger UI at `http://localhost:8080/swagger-ui.html` for API testing.
 
 ## Folder Structure
 ```
@@ -18,129 +118,13 @@ user-service/
     static/
 ```
 
-## API Endpoints
-
-### Register User
-- **POST** `/users`
-- **Request Body:**
-```json
-{
-  "name": "John Doe",
-  "email": "john@example.com",
-  "phone": "+1234567890"
-}
-```
-- **Response:**
-```json
-{
-  "id": 1,
-  "name": "John Doe",
-  "email": "john@example.com",
-  "phone": "+1234567890",
-  "totalOrders": 0,
-  "totalSpent": 0.0
-}
-```
-
-### Get User by ID
-- **GET** `/users/{id}`
-- **Response:**
-```json
-{
-  "id": 1,
-  "name": "John Doe",
-  "email": "john@example.com",
-  "phone": "+1234567890",
-  "totalOrders": 0,
-  "totalSpent": 0.0
-}
-```
-
-### Get User by Email
-- **GET** `/users/email/{email}`
-- **Response:** Same as above
-
-### Update User
-- **PUT** `/users/{id}`
-- **Request Body:**
-```json
-{
-  "name": "Jane Doe",
-  "email": "jane@example.com",
-  "phone": "+1987654321"
-}
-```
-- **Response:**
-```json
-{
-  "id": 1,
-  "name": "Jane Doe",
-  "email": "jane@example.com",
-  "phone": "+1987654321",
-  "totalOrders": 0,
-  "totalSpent": 0.0
-}
-```
-
-### Delete User
-- **DELETE** `/users/{id}`
-- **Response:** `204 No Content`
-
-## Error Handling
-- **404 Not Found:**
-```json
-{"error": "User not found with id: 99"}
-```
-- **400 Bad Request:**
-```json
-{"email": "Invalid email format"}
-```
-
-## Code Snippets
-
-### Entity
-```java
-@Entity
-@Table(name = "users")
-public class User { ... }
-```
-
-### Repository
-```java
-@Repository
-public interface UserRepository extends JpaRepository<User, Long> {
-    Optional<User> findByEmail(String email);
-}
-```
-
-### Service
-```java
-@Service
-public class UserService { ... }
-```
-
-### Controller
-```java
-@RestController
-@RequestMapping("/users")
-public class UserController { ... }
-```
-
-### Talon.One Integration
-```java
-@Component
-public class TalonOneClient { ... }
-```
-
-## Configuration
-See `src/main/resources/application.yml` for PostgreSQL and Talon.One settings.
-
-## Security & Best Practices
-- Input validation via DTOs and annotations
-- Exception handling via `@ControllerAdvice`
+## Security
+- Input validation via DTOs and validation annotations
 - Secure database access via Spring Data JPA
-- Modular, maintainable code
+- Sensitive data is not exposed in API responses
+
+## Testing
+- Unit tests for service and repository layers are provided.
 
 ---
-
-**Replace Talon.One and PostgreSQL credentials in `application.yml` before deployment.**
+For questions, contact the engineering team.
