@@ -16,10 +16,10 @@ import java.util.Map;
 @EnableKafka
 @Configuration
 public class KafkaConfig {
-    @Value("${spring.kafka.bootstrap-servers}")
+    @Value("${kafka.bootstrap-servers}")
     private String bootstrapServers;
 
-    @Value("${spring.kafka.consumer.group-id}")
+    @Value("${kafka.group-id}")
     private String groupId;
 
     @Bean
