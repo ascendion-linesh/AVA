@@ -17,6 +17,32 @@ import org.springframework.web.bind.annotation.RequestBody as SpringRequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * Sample request for /rewards/evaluate:
+ * {
+ *   "orderId": "ORD-12345",
+ *   "customerId": "CUST-001",
+ *   "items": [
+ *     {"productId": "P-100", "quantity": 2, "price": 19.99},
+ *     {"productId": "P-200", "quantity": 1, "price": 49.99}
+ *   ],
+ *   "totalAmount": 89.97,
+ *   "eventType": "ORDER_PLACED",
+ *   "eventTimestamp": 1718000000000
+ * }
+ *
+ * Sample response:
+ * {
+ *   "discount": 10.00,
+ *   "appliedCampaigns": ["Summer Sale", "VIP Customer"],
+ *   "loyaltyActions": ["Added 100 points"],
+ *   "message": "Evaluation successful"
+ * }
+ *
+ * Example Kafka event log:
+ * 2024-06-10 12:00:00 [rewards-kafka-listener] INFO  com.example.rewards.service.KafkaOrderListener - Processing order event from Kafka: ORD-12345
+ * 2024-06-10 12:00:01 [rewards-kafka-listener] INFO  com.example.rewards.service.KafkaOrderListener - Order event processed and loyalty actions confirmed: ORD-12345
+ */
 @RestController
 @RequestMapping("/rewards")
 public class RewardsController {
