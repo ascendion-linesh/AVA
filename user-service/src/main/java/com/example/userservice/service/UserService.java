@@ -1,85 +1,94 @@
 package com.example.userservice.service;
 
-import com.example.userservice.dto.UserRequestDTO;
-import com.example.userservice.dto.UserResponseDTO;
+import com.example.userservice.dto.UserRequestDto;
+import com.example.userservice.dto.UserResponseDto;
 import com.example.userservice.entity.User;
-import com.example.userservice.exception.DuplicateEmailException;
-import com.example.userservice.exception.UserNotFoundException;
+import com.example.userservice.exception.ResourceNotFoundException;
 import com.example.userservice.repository.UserRepository;
 import com.example.userservice.talonone.TalonOneClient;
-import org.springframework.beans.factory.annotation.Autowired;
+import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Optional;
+
+/**
+ * Service layer for user operations.
+ */
+@Slf4j
 @Service
+@RequiredArgsConstructor
 public class UserService {
     private final UserRepository userRepository;
     private final TalonOneClient talonOneClient;
 
-    @Autowired
-    public UserService(UserRepository userRepository, TalonOneClient talonOneClient) {
-        this.userRepository = userRepository;
-        this.talonOneClient = talonOneClient;
-    }
-
+    /**
+     * Registers a new user and integrates with Talon.One.
+     */
     @Transactional
-    public UserResponseDTO registerUser(UserRequestDTO dto) {
-        if (userRepository.findByEmail(dto.getEmail()).isPresent()) {
-            throw new DuplicateEmailException("Email already exists");
+    public UserResponseDto registerUser(UserRequestDto dto) {
+        try {
+            User user = User.builder()
+                    .name(dto.getName())
+                    .email(dto.getEmail())
+                    .phone(dto.getPhone())
+                    .totalOrders(dto.getTotalOrders())
+                    .totalSpent(dto.getTotalSpent())
+                    .build();
+            user = userRepository.save(user);
+            boolean talonOneSuccess = talonOneClient.registerUserInTalonOne(user.getId(), user.getEmail(), user.getName());
+            if (!talonOneSuccess) {
+                log.warn("Talon.One registration failed for user {}", user.getId());
+            }
+            return mapToResponseDto(user);
+        } catch (DataIntegrityViolationException ex) {
+            throw new IllegalArgumentException("Email or phone already exists");
         }
-        User user = new User();
-        user.setName(dto.getName());
-        user.setEmail(dto.getEmail());
-        user.setPhone(dto.getPhone());
-        user.setTotalOrders(dto.getTotalOrders());
-        user.setTotalSpent(dto.getTotalSpent());
-        User savedUser = userRepository.save(user);
-        // Integrate with Talon.One
-        talonOneClient.registerUserWithTalonOne(savedUser.getId(), savedUser.getEmail(), savedUser.getName());
-        return toResponseDTO(savedUser);
     }
 
-    public UserResponseDTO getUserById(Long id) {
+    public UserResponseDto getUserById(Long id) {
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new UserNotFoundException("User not found with id: " + id));
-        return toResponseDTO(user);
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
+        return mapToResponseDto(user);
     }
 
-    public UserResponseDTO getUserByEmail(String email) {
+    public UserResponseDto getUserByEmail(String email) {
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new UserNotFoundException("User not found with email: " + email));
-        return toResponseDTO(user);
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + email));
+        return mapToResponseDto(user);
     }
 
     @Transactional
-    public UserResponseDTO updateUser(Long id, UserRequestDTO dto) {
+    public UserResponseDto updateUser(Long id, UserRequestDto dto) {
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new UserNotFoundException("User not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
         user.setName(dto.getName());
         user.setEmail(dto.getEmail());
         user.setPhone(dto.getPhone());
         user.setTotalOrders(dto.getTotalOrders());
         user.setTotalSpent(dto.getTotalSpent());
-        User updatedUser = userRepository.save(user);
-        return toResponseDTO(updatedUser);
+        user = userRepository.save(user);
+        return mapToResponseDto(user);
     }
 
     @Transactional
     public void deleteUser(Long id) {
         if (!userRepository.existsById(id)) {
-            throw new UserNotFoundException("User not found with id: " + id);
+            throw new ResourceNotFoundException("User not found with id: " + id);
         }
         userRepository.deleteById(id);
     }
 
-    private UserResponseDTO toResponseDTO(User user) {
-        return new UserResponseDTO(
-                user.getId(),
-                user.getName(),
-                user.getEmail(),
-                user.getPhone(),
-                user.getTotalOrders(),
-                user.getTotalSpent()
-        );
+    private UserResponseDto mapToResponseDto(User user) {
+        return UserResponseDto.builder()
+                .id(user.getId())
+                .name(user.getName())
+                .email(user.getEmail())
+                .phone(user.getPhone())
+                .totalOrders(user.getTotalOrders())
+                .totalSpent(user.getTotalSpent())
+                .build();
     }
 }
