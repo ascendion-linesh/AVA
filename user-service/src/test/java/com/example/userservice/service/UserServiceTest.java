@@ -2,6 +2,7 @@ package com.example.userservice.service;
 
 import com.example.userservice.dto.UserRequestDto;
 import com.example.userservice.entity.User;
+import com.example.userservice.exception.ResourceNotFoundException;
 import com.example.userservice.repository.UserRepository;
 import com.example.userservice.talonone.TalonOneClient;
 import org.junit.jupiter.api.BeforeEach;
@@ -10,11 +11,10 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
-import java.math.BigDecimal;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 class UserServiceTest {
@@ -33,34 +33,35 @@ class UserServiceTest {
     @Test
     void registerUser_success() {
         UserRequestDto dto = new UserRequestDto();
-        dto.setName("Test User");
-        dto.setEmail("test@example.com");
-        dto.setPhone("1234567890");
-        dto.setTotalOrders(1);
-        dto.setTotalSpent(BigDecimal.valueOf(50));
+        dto.setName("Alice");
+        dto.setEmail("alice@example.com");
+        dto.setPhone("+1234567890");
 
-        User savedUser = User.builder()
-                .id(1L)
-                .name(dto.getName())
-                .email(dto.getEmail())
-                .phone(dto.getPhone())
-                .totalOrders(dto.getTotalOrders())
-                .totalSpent(dto.getTotalSpent())
-                .build();
-
-        when(userRepository.save(any(User.class))).thenReturn(savedUser);
-        when(talonOneClient.registerUserInTalonOne(anyLong(), anyString(), anyString())).thenReturn(true);
+        when(userRepository.findByEmail(dto.getEmail())).thenReturn(Optional.empty());
+        when(userRepository.save(any(User.class))).thenAnswer(i -> {
+            User u = i.getArgument(0);
+            u.setId(1L);
+            return u;
+        });
+        doNothing().when(talonOneClient).createCustomerProfile(any(), any(), any(), any());
 
         var response = userService.registerUser(dto);
-        assertEquals("Test User", response.getName());
-        assertEquals("test@example.com", response.getEmail());
-        verify(userRepository, times(1)).save(any(User.class));
-        verify(talonOneClient, times(1)).registerUserInTalonOne(anyLong(), anyString(), anyString());
+        assertNotNull(response);
+        assertEquals("Alice", response.getName());
+        verify(talonOneClient, times(1)).createCustomerProfile(any(), any(), any(), any());
     }
 
     @Test
     void getUserById_notFound() {
-        when(userRepository.findById(anyLong())).thenReturn(Optional.empty());
-        assertThrows(RuntimeException.class, () -> userService.getUserById(1L));
+        when(userRepository.findById(1L)).thenReturn(Optional.empty());
+        assertThrows(ResourceNotFoundException.class, () -> userService.getUserById(1L));
+    }
+
+    @Test
+    void getUserByEmail_success() {
+        User user = User.builder().id(2L).name("Bob").email("bob@example.com").phone("+1234567891").totalOrders(0).totalSpent(0.0).build();
+        when(userRepository.findByEmail("bob@example.com")).thenReturn(Optional.of(user));
+        var response = userService.getUserByEmail("bob@example.com");
+        assertEquals("Bob", response.getName());
     }
 }
