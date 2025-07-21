@@ -1,27 +1,37 @@
 server:
-  port: 8080
+  port: 8082
+  servlet:
+    context-path: /api
+
 spring:
   application:
     name: rewards-service
   kafka:
     consumer:
-      group-id: rewards-service-group
       auto-offset-reset: earliest
-      bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
-      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-    listener:
-      missing-topics-fatal: false
+      group-id: rewards-service-group
+      bootstrap-servers: localhost:9092
 
 kafka:
-  bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+  bootstrap-servers: localhost:9092
   group-id: rewards-service-group
 
 talonone:
-  api-url: ${TALONONE_API_URL:https://your-talonone-endpoint.talon.one}
-  api-key: ${TALONONE_API_KEY:your-api-key}
+  api-key: "YOUR_TALONONE_API_KEY"
+  base-url: "https://api.talon.one"
+  application-id: "YOUR_TALONONE_APPLICATION_ID"
+  campaign-id: "YOUR_TALONONE_CAMPAIGN_ID"
 
 logging:
   level:
     root: INFO
     com.example.rewards: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} %-5level %logger{36} - %msg%n"
+
+# Swagger/OpenAPI
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
