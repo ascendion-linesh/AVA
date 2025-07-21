@@ -6,7 +6,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -16,22 +16,29 @@ public class GlobalExceptionHandler {
     private static final Logger logger = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     @ExceptionHandler(TalonOneException.class)
-    @ResponseStatus(HttpStatus.BAD_GATEWAY)
     public ResponseEntity<Map<String, Object>> handleTalonOneException(TalonOneException ex) {
-        logger.error("Talon.One API error: {}", ex.getMessage());
-        Map<String, Object> body = new HashMap<>();
-        body.put("error", "Talon.One API error");
-        body.put("message", ex.getMessage());
-        return new ResponseEntity<>(body, HttpStatus.BAD_GATEWAY);
+        logger.error("TalonOneException: {}", ex.getMessage(), ex);
+        Map<String, Object> error = new HashMap<>();
+        error.put("error", "TalonOne API error");
+        error.put("message", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(error);
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<Map<String, Object>> handleValidationException(MethodArgumentNotValidException ex) {
+        logger.error("Validation error: {}", ex.getMessage(), ex);
+        Map<String, Object> error = new HashMap<>();
+        error.put("error", "Validation error");
+        error.put("message", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
     }
 
     @ExceptionHandler(Exception.class)
-    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public ResponseEntity<Map<String, Object>> handleGenericException(Exception ex) {
-        logger.error("Internal server error: {}", ex.getMessage(), ex);
-        Map<String, Object> body = new HashMap<>();
-        body.put("error", "Internal server error");
-        body.put("message", ex.getMessage());
-        return new ResponseEntity<>(body, HttpStatus.INTERNAL_SERVER_ERROR);
+        logger.error("Unexpected error: {}", ex.getMessage(), ex);
+        Map<String, Object> error = new HashMap<>();
+        error.put("error", "Internal server error");
+        error.put("message", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
     }
 }
