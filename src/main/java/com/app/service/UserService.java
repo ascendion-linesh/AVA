@@ -1,13 +1,12 @@
 package com.app.service;
 
-import com.app.exception.ResourceNotFoundException;
-import com.app.model.ProfileDTO;
 import com.app.model.User;
-import com.app.model.UserStatsUpdateRequest;
+import com.app.model.UserResponse;
+import com.app.model.UpdateUserStatsRequest;
 import com.app.repository.UserRepository;
+import jakarta.persistence.EntityNotFoundException;
 lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Service for user-related business logic.
@@ -21,67 +20,39 @@ public class UserService {
     /**
      * Fetches user details by ID.
      * @param id The ID of the user.
-     * @return The user entity.
-     * @throws ResourceNotFoundException if user is not found.
+     * @return UserResponse containing user details.
      */
-    @Transactional(readOnly = true)
-    public User getUser(Long id) {
-        return userRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
+    public UserResponse getUserById(Long id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("User not found with id: " + id));
+        return UserResponse.fromEntity(user);
     }
 
     /**
-     * Fetches user profile DTO by user ID.
-     * @param id The ID of the user.
-     * @return The profile DTO.
-     */
-    @Transactional(readOnly = true)
-    public ProfileDTO getUserProfileById(Long id) {
-        User user = getUser(id);
-        return toProfileDTO(user);
-    }
-
-    /**
-     * Updates user statistics such as totalOrders and totalSpent.
+     * Updates user's totalOrders and totalSpent statistics.
      * @param id The ID of the user.
      * @param request The request containing updated stats.
-     * @return The updated profile DTO.
+     * @return Updated UserResponse.
      */
-    @Transactional
-    public ProfileDTO updateUserStats(Long id, UserStatsUpdateRequest request) {
-        User user = getUser(id);
+    public UserResponse updateUserStats(Long id, UpdateUserStatsRequest request) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("User not found with id: " + id));
         user.setTotalOrders(request.getTotalOrders());
         user.setTotalSpent(request.getTotalSpent());
         userRepository.save(user);
-        return toProfileDTO(user);
+        return UserResponse.fromEntity(user);
     }
 
     /**
-     * Updates user statistics after a new order is placed.
-     * @param userId The ID of the user.
-     * @param order The order placed.
+     * Updates user statistics after an order is placed.
+     * @param userId The user ID.
+     * @param orderTotal The total amount of the new order.
      */
-    @Transactional
-    public void updateStatsAfterOrder(Long userId, com.app.model.Order order) {
-        User user = getUser(userId);
+    public void incrementUserStats(Long userId, double orderTotal) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new EntityNotFoundException("User not found with id: " + userId));
         user.setTotalOrders(user.getTotalOrders() + 1);
-        user.setTotalSpent(user.getTotalSpent() + order.getTotalAmount());
+        user.setTotalSpent(user.getTotalSpent() + orderTotal);
         userRepository.save(user);
-    }
-
-    /**
-     * Converts a User entity to ProfileDTO.
-     * @param user The user entity.
-     * @return The profile DTO.
-     */
-    private ProfileDTO toProfileDTO(User user) {
-        ProfileDTO dto = new ProfileDTO();
-        dto.setId(user.getId());
-        dto.setName(user.getName());
-        dto.setEmail(user.getEmail());
-        dto.setTotalOrders(user.getTotalOrders());
-        dto.setTotalSpent(user.getTotalSpent());
-        // Add other fields as necessary
-        return dto;
     }
 }
