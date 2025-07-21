@@ -1,8 +1,8 @@
 spring:
   datasource:
     url: jdbc:postgresql://localhost:5432/userdb
-    username: postgres
-    password: postgres
+    username: user
+    password: password
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
@@ -11,19 +11,16 @@ spring:
     properties:
       hibernate:
         format_sql: true
-  jackson:
-    serialization:
-      INDENT_OUTPUT: true
 
-server:
-  port: 8080
+# Talon.One API configuration
+# Replace with your actual Talon.One API URL and API key
+# Example: https://yourcompany.talon.one
+# Example: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
 
 talonone:
   api:
-    url: https://your-talonone-endpoint.talon.one
-    key: YOUR_TALONONE_API_KEY
+    url: https://yourcompany.talon.one
+    key: your-talonone-api-key
 
-logging:
-  level:
-    root: INFO
-    com.example.userservice: DEBUG
+server:
+  port: 8080
