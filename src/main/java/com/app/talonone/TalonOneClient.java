@@ -1,142 +1,136 @@
 package com.app.talonone;
 
+import com.app.model.ProfileDTO;
+import com.app.model.RewardsResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Component;
-import org.springframework.web.client.HttpStatusCodeException;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.HttpServerErrorException;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.web.util.UriComponentsBuilder;
 
 import java.util.Collections;
 
 /**
- * TalonOneClient is a reusable, centralized client for interacting with the Talon.One Integration API.
+ * Client for interacting with the Talon.One Integration API.
  * <p>
- * It manages HTTP communication, authentication headers, and provides methods for updating user profiles,
- * evaluating sessions for rewards, and confirming loyalty points.
- * <p>
- * Configuration (base URL and API key) is loaded from application.properties.
- * <p>
- * Usage example:
+ * Provides methods to update customer profiles, evaluate sessions for rewards,
+ * and confirm loyalty transactions. Handles HTTP communication, authentication,
+ * and error handling according to Spring Boot best practices.
+ * </p>
+ *
  * <pre>
- *     talonOneClient.updateProfile(userId, profileDTO);
- *     RewardsResponse rewards = talonOneClient.evaluateSession(userId, sessionDTO);
- *     talonOneClient.confirmLoyalty(userId, totalAmount);
+ * Example usage:
+ *   talonOneClient.updateProfile("user123", profileDto);
+ *   RewardsResponse rewards = talonOneClient.evaluateSession(sessionDto);
+ *   talonOneClient.confirmLoyalty("user123", 150.0);
  * </pre>
  */
 @Component
 public class TalonOneClient {
 
+    @Value("${talonone.base-url}")
+    private String baseUrl;
+
+    @Value("${talonone.api-key}")
+    private String apiKey;
+
     private final RestTemplate restTemplate;
-    private final String baseUrl;
-    private final String apiKey;
 
     /**
-     * Constructs a TalonOneClient with configuration loaded from application.properties.
+     * Constructs a TalonOneClient with the provided RestTemplate.
      *
-     * @param baseUrl Talon.One Integration API base URL (e.g., https://yourcompany.talon.one)
-     * @param apiKey  Talon.One Integration API key (e.g., ApiKey-v1 ...)
+     * @param restTemplate the RestTemplate to use for HTTP requests
      */
-    public TalonOneClient(
-            @Value("${talonone.base-url}") String baseUrl,
-            @Value("${talonone.api-key}") String apiKey
-    ) {
-        this.restTemplate = new RestTemplate();
-        this.baseUrl = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
-        this.apiKey = apiKey;
+    public TalonOneClient(RestTemplate restTemplate) {
+        this.restTemplate = restTemplate;
     }
 
     /**
-     * Updates a user's profile in Talon.One.
+     * Updates the profile of a user in Talon.One.
      *
-     * @param userId     The unique identifier of the user.
-     * @param profileDTO The profile data to update (DTO object).
-     * @throws TalonOneClientException if the request fails.
+     * @param userId the unique identifier of the user
+     * @param dto    the profile data to update
+     * @throws TalonOneClientException if the request fails
      */
-    public void updateProfile(String userId, Object profileDTO) {
-        String url = UriComponentsBuilder.fromHttpUrl(baseUrl)
-                .path("/v1/profiles/{userId}")
-                .buildAndExpand(userId)
-                .toUriString();
-
+    public void updateProfile(String userId, ProfileDTO dto) {
+        String url = String.format("%s/v1/profiles/%s", baseUrl, userId);
         HttpHeaders headers = createHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-
-        HttpEntity<Object> entity = new HttpEntity<>(profileDTO, headers);
+        HttpEntity<ProfileDTO> entity = new HttpEntity<>(dto, headers);
 
         try {
             restTemplate.exchange(url, HttpMethod.PUT, entity, Void.class);
-        } catch (HttpStatusCodeException ex) {
-            throw handleException("Failed to update profile for userId: " + userId, ex);
-        } catch (Exception ex) {
-            throw new TalonOneClientException("Unexpected error updating profile for userId: " + userId, ex);
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new TalonOneClientException("Failed to update profile: " + ex.getResponseBodyAsString(), ex);
+        } catch (RestClientException ex) {
+            throw new TalonOneClientException("Failed to update profile: " + ex.getMessage(), ex);
         }
     }
 
     /**
-     * Evaluates a user's session in Talon.One and returns personalized rewards and discounts.
+     * Evaluates a session in Talon.One to determine applicable rewards and discounts.
      *
-     * @param userId     The unique identifier of the user (used for logging/tracing).
-     * @param sessionDTO The session data to evaluate (DTO object).
-     * @return RewardsResponse containing the evaluation result.
-     * @throws TalonOneClientException if the request fails.
+     * @param dto the session data
+     * @return the rewards response from Talon.One
+     * @throws TalonOneClientException if the request fails
      */
-    public RewardsResponse evaluateSession(String userId, Object sessionDTO) {
-        String url = UriComponentsBuilder.fromHttpUrl(baseUrl)
-                .path("/v1/sessions")
-                .toUriString();
-
+    public RewardsResponse evaluateSession(Object dto) {
+        String url = String.format("%s/v1/sessions", baseUrl);
         HttpHeaders headers = createHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-
-        HttpEntity<Object> entity = new HttpEntity<>(sessionDTO, headers);
+        HttpEntity<Object> entity = new HttpEntity<>(dto, headers);
 
         try {
             ResponseEntity<RewardsResponse> response = restTemplate.exchange(
-                    url, HttpMethod.POST, entity, RewardsResponse.class
+                    url,
+                    HttpMethod.POST,
+                    entity,
+                    RewardsResponse.class
             );
-            return response.getBody();
-        } catch (HttpStatusCodeException ex) {
-            throw handleException("Failed to evaluate session for userId: " + userId, ex);
-        } catch (Exception ex) {
-            throw new TalonOneClientException("Unexpected error evaluating session for userId: " + userId, ex);
+            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+                return response.getBody();
+            } else {
+                throw new TalonOneClientException("Unexpected response from Talon.One: " + response.getStatusCode());
+            }
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new TalonOneClientException("Failed to evaluate session: " + ex.getResponseBodyAsString(), ex);
+        } catch (RestClientException ex) {
+            throw new TalonOneClientException("Failed to evaluate session: " + ex.getMessage(), ex);
         }
     }
 
     /**
-     * Confirms a user's loyalty transaction in Talon.One.
+     * Confirms a loyalty transaction for a user in Talon.One.
      *
-     * @param userId      The unique identifier of the user.
-     * @param totalAmount The total amount to confirm for loyalty.
-     * @throws TalonOneClientException if the request fails.
+     * @param userId      the unique identifier of the user
+     * @param totalAmount the total amount for loyalty confirmation
+     * @throws TalonOneClientException if the request fails
      */
     public void confirmLoyalty(String userId, double totalAmount) {
-        String url = UriComponentsBuilder.fromHttpUrl(baseUrl)
-                .path("/v1/loyalty/{userId}/confirm")
-                .buildAndExpand(userId)
-                .toUriString();
-
+        String url = String.format("%s/v1/loyalty/%s/confirm", baseUrl, userId);
         HttpHeaders headers = createHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
 
-        // Assuming Talon.One expects a JSON body like {"totalAmount": ...}
-        String body = String.format("{\"totalAmount\": %s}", totalAmount);
+        // Assuming the API expects a JSON body with totalAmount
+        String body = String.format("{\"totalAmount\": %.2f}", totalAmount);
 
         HttpEntity<String> entity = new HttpEntity<>(body, headers);
 
         try {
             restTemplate.exchange(url, HttpMethod.POST, entity, Void.class);
-        } catch (HttpStatusCodeException ex) {
-            throw handleException("Failed to confirm loyalty for userId: " + userId, ex);
-        } catch (Exception ex) {
-            throw new TalonOneClientException("Unexpected error confirming loyalty for userId: " + userId, ex);
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new TalonOneClientException("Failed to confirm loyalty: " + ex.getResponseBodyAsString(), ex);
+        } catch (RestClientException ex) {
+            throw new TalonOneClientException("Failed to confirm loyalty: " + ex.getMessage(), ex);
         }
     }
 
     /**
      * Creates HTTP headers with Authorization for Talon.One API.
      *
-     * @return HttpHeaders with Authorization header set.
+     * @return HttpHeaders with Authorization set
      */
     private HttpHeaders createHeaders() {
         HttpHeaders headers = new HttpHeaders();
@@ -146,35 +140,15 @@ public class TalonOneClient {
     }
 
     /**
-     * Handles HTTP exceptions and wraps them in a TalonOneClientException.
-     *
-     * @param message Contextual error message.
-     * @param ex      The HttpStatusCodeException thrown by RestTemplate.
-     * @return TalonOneClientException with details.
-     */
-    private TalonOneClientException handleException(String message, HttpStatusCodeException ex) {
-        String errorBody = ex.getResponseBodyAsString();
-        String fullMessage = String.format("%s. Status: %s, Body: %s", message, ex.getStatusCode(), errorBody);
-        return new TalonOneClientException(fullMessage, ex);
-    }
-
-    /**
      * Exception class for TalonOneClient errors.
      */
     public static class TalonOneClientException extends RuntimeException {
         public TalonOneClientException(String message, Throwable cause) {
             super(message, cause);
         }
+
         public TalonOneClientException(String message) {
             super(message);
         }
-    }
-
-    /**
-     * Placeholder for the RewardsResponse DTO.
-     * Replace this with the actual RewardsResponse implementation as needed.
-     */
-    public static class RewardsResponse {
-        // Define fields and methods as per actual Talon.One response schema.
     }
 }
