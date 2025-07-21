@@ -1,14 +1,20 @@
 package com.app.service;
 
-import com.app.model.*;
+import com.app.model.OrderCreateRequest;
+import com.app.model.OrderResponse;
+import com.app.model.RewardsResponse;
+import com.app.entity.Order;
+import com.app.entity.User;
 import com.app.repository.OrderRepository;
-import jakarta.persistence.EntityNotFoundException;
 lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.util.stream.Collectors;
+
 /**
- * Service for order-related business logic.
+ * Service layer for order processing, reward application, and persistence.
  */
 @Service
 @RequiredArgsConstructor
@@ -19,43 +25,61 @@ public class OrderService {
     private final OrderRepository orderRepository;
 
     /**
-     * Places a new order, applies rewards, saves the order, and updates user stats.
-     * @param request The order placement request.
-     * @return The response containing order details.
+     * Places a new order, applies rewards/discounts, saves the order, and returns the response.
+     * @param request The order creation request DTO.
+     * @param rewards The evaluated rewards/discounts for the order.
+     * @return OrderResponse DTO representing the saved order.
      */
     @Transactional
-    public OrderResponse placeOrder(PlaceOrderRequest request) {
-        // Fetch user
-        UserResponse userResponse = userService.getUserById(request.getUserId());
-        if (userResponse == null) {
-            throw new EntityNotFoundException("User not found with id: " + request.getUserId());
-        }
+    public OrderResponse createOrder(OrderCreateRequest request, RewardsResponse rewards) {
+        // 1. Retrieve the user
+        User user = userService.getUserById(request.getUserId());
 
-        // Evaluate rewards/discounts
-        CartRequest cartRequest = new CartRequest(request.getUserId(), request.getItems());
-        RewardsResponse rewards = rewardsService.evaluateRewards(cartRequest);
+        // 2. Calculate subtotal and apply discounts/loyalty points from rewards
+        BigDecimal subtotal = request.getItems().stream()
+                .map(item -> item.getPrice().multiply(BigDecimal.valueOf(item.getQuantity())))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        // Calculate total with discount
-        double originalTotal = request.getItems().stream().mapToDouble(Item::getPrice).sum();
-        double discount = rewards.getDiscountAmount();
-        double finalTotal = Math.max(0, originalTotal - discount);
+        BigDecimal discount = rewards != null && rewards.getDiscountAmount() != null
+                ? rewards.getDiscountAmount()
+                : BigDecimal.ZERO;
 
-        // Create and save order
+        BigDecimal total = subtotal.subtract(discount).max(BigDecimal.ZERO);
+
+        // Optionally, handle loyalty points or other reward effects here
+        Integer loyaltyPointsApplied = rewards != null ? rewards.getLoyaltyPointsApplied() : 0;
+
+        // 3. Create and save the Order entity
         Order order = new Order();
-        order.setUserId(request.getUserId());
-        order.setItems(request.getItems());
-        order.setOriginalTotal(originalTotal);
+        order.setUser(user);
+        order.setItems(
+                request.getItems().stream()
+                        .map(itemDto -> itemDto.toEntity()) // Assume toEntity() exists on DTO
+                        .collect(Collectors.toList())
+        );
+        order.setSubtotal(subtotal);
         order.setDiscount(discount);
-        order.setFinalTotal(finalTotal);
-        order.setStatus("PLACED");
-        orderRepository.save(order);
+        order.setTotal(total);
+        order.setLoyaltyPointsApplied(loyaltyPointsApplied);
+        order.setStatus("CREATED"); // or whatever default status
 
-        // Update user statistics
-        userService.incrementUserStats(request.getUserId(), finalTotal);
+        Order savedOrder = orderRepository.save(order);
 
-        // Confirm loyalty point usage
-        rewardsService.confirmLoyalty(request.getUserId(), finalTotal);
-
-        return OrderResponse.fromEntity(order, rewards);
+        // 4. Return an OrderResponse DTO
+        return OrderResponse.builder()
+                .orderId(savedOrder.getId())
+                .userId(user.getId())
+                .items(
+                        savedOrder.getItems().stream()
+                                .map(item -> item.toDto()) // Assume toDto() exists on entity
+                                .collect(Collectors.toList())
+                )
+                .subtotal(savedOrder.getSubtotal())
+                .discount(savedOrder.getDiscount())
+                .total(savedOrder.getTotal())
+                .loyaltyPointsApplied(savedOrder.getLoyaltyPointsApplied())
+                .status(savedOrder.getStatus())
+                .createdAt(savedOrder.getCreatedAt())
+                .build();
     }
 }
