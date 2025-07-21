@@ -19,15 +19,11 @@ public class RewardsController {
     private final RewardsService rewardsService;
 
     /**
-     * Evaluate rewards for a given cart.
-     * @param cartRequest Cart request payload
-     * @return Rewards response
+     * Evaluate rewards for the provided cart details.
      */
     @PostMapping("/evaluate")
-    public ResponseEntity<RewardsResponse> evaluateRewards(
-            @Valid @RequestBody CartRequest cartRequest
-    ) {
-        RewardsResponse response = rewardsService.evaluateCart(cartRequest);
+    public ResponseEntity<RewardsResponse> evaluateRewards(@RequestBody @Valid CartRequest cartRequest) {
+        RewardsResponse response = rewardsService.evaluateRewards(cartRequest);
         return ResponseEntity.ok(response);
     }
 }
