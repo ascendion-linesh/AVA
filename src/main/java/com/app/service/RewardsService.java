@@ -1,12 +1,13 @@
 package com.app.service;
 
-import com.app.model.*;
-import com.app.talonone.TalonOneClient;
+import com.app.client.TalonOneClient;
+import com.app.model.RewardsEvaluationRequest;
+import com.app.model.RewardsResponse;
 lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 /**
- * Service for handling rewards and discount logic, integrating with Talon.One.
+ * Service layer for integrating with Talon.One to evaluate rewards and confirm loyalty points.
  */
 @Service
 @RequiredArgsConstructor
@@ -15,36 +16,28 @@ public class RewardsService {
     private final TalonOneClient talonOneClient;
 
     /**
-     * Evaluates rewards and discounts for a given cart by updating the user profile
-     * and evaluating the session via Talon.One.
-     * @param cartRequest The cart request containing user and item details.
-     * @return RewardsResponse containing applicable discounts and rewards.
+     * Evaluates rewards and discounts for a given cart/session.
+     * Updates the user profile in Talon.One, evaluates the session, and returns the rewards.
+     * @param request The reward evaluation request containing user and session data.
+     * @return RewardsResponse containing personalized rewards and discounts.
      */
-    public RewardsResponse evaluateRewards(CartRequest cartRequest) {
-        // Update user profile in Talon.One
-        ProfileDTO profileDTO = new ProfileDTO(cartRequest.getUserId());
-        talonOneClient.updateProfile(profileDTO);
+    public RewardsResponse evaluateRewards(RewardsEvaluationRequest request) {
+        // Step 1: Update user profile in Talon.One
+        talonOneClient.updateProfile(request.getUserId(), request.getUserProfileAttributes());
 
-        // Evaluate session for discounts/rewards
-        SessionDTO sessionDTO = new SessionDTO(cartRequest.getUserId(), cartRequest.getItems());
-        return talonOneClient.evaluateSession(sessionDTO);
+        // Step 2: Evaluate the session for rewards
+        RewardsResponse rewardsResponse = talonOneClient.evaluateSession(request);
+
+        // Step 3: Return the rewards response
+        return rewardsResponse;
     }
 
     /**
-     * Confirms loyalty point usage for a user after an order is placed.
-     * @param userId The ID of the user.
-     * @param total The total amount of the order.
+     * Confirms the usage of loyalty points for a user after a successful transaction.
+     * @param userId The user's unique identifier.
+     * @param total The total amount for which loyalty points are being confirmed.
      */
-    public void confirmLoyalty(Long userId, double total) {
+    public void confirmLoyalty(String userId, double total) {
         talonOneClient.confirmLoyalty(userId, total);
-    }
-
-    /**
-     * (Optional) For side-effect reward evaluation before order placement.
-     * @param request The place order request.
-     */
-    public void evaluateRewardsForOrder(PlaceOrderRequest request) {
-        CartRequest cartRequest = new CartRequest(request.getUserId(), request.getItems());
-        evaluateRewards(cartRequest);
     }
 }
