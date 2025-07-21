@@ -1,15 +1,17 @@
 package com.app.service;
 
-import com.app.model.User;
+import com.app.model.UserUpdateRequest;
 import com.app.model.UserResponse;
-import com.app.model.UpdateUserStatsRequest;
+import com.app.model.OrderResponse;
+import com.app.entity.User;
 import com.app.repository.UserRepository;
-import jakarta.persistence.EntityNotFoundException;
 lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.Optional;
+
 /**
- * Service for user-related business logic.
+ * Service layer for user management and statistics updates.
  */
 @Service
 @RequiredArgsConstructor
@@ -18,41 +20,58 @@ public class UserService {
     private final UserRepository userRepository;
 
     /**
-     * Fetches user details by ID.
-     * @param id The ID of the user.
-     * @return UserResponse containing user details.
+     * Fetch user details by ID.
+     * @param id The user ID.
+     * @return UserResponse DTO if found, otherwise null.
      */
     public UserResponse getUserById(Long id) {
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("User not found with id: " + id));
-        return UserResponse.fromEntity(user);
+        Optional<User> userOpt = userRepository.findById(id);
+        return userOpt.map(this::mapToUserResponse).orElse(null);
     }
 
     /**
-     * Updates user's totalOrders and totalSpent statistics.
-     * @param id The ID of the user.
-     * @param request The request containing updated stats.
-     * @return Updated UserResponse.
+     * Update user's totalOrders and totalSpent.
+     * @param id The user ID.
+     * @param request The update request DTO.
+     * @return Updated UserResponse DTO if user exists, otherwise null.
      */
-    public UserResponse updateUserStats(Long id, UpdateUserStatsRequest request) {
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("User not found with id: " + id));
+    public UserResponse updateUserStats(Long id, UserUpdateRequest request) {
+        Optional<User> userOpt = userRepository.findById(id);
+        if (userOpt.isEmpty()) {
+            return null;
+        }
+        User user = userOpt.get();
         user.setTotalOrders(request.getTotalOrders());
         user.setTotalSpent(request.getTotalSpent());
         userRepository.save(user);
-        return UserResponse.fromEntity(user);
+        return mapToUserResponse(user);
     }
 
     /**
-     * Updates user statistics after an order is placed.
+     * Update user statistics after an order is placed.
      * @param userId The user ID.
-     * @param orderTotal The total amount of the new order.
+     * @param order The order response DTO.
      */
-    public void incrementUserStats(Long userId, double orderTotal) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new EntityNotFoundException("User not found with id: " + userId));
+    public void updateUserStatsAfterOrder(Long userId, OrderResponse order) {
+        Optional<User> userOpt = userRepository.findById(userId);
+        if (userOpt.isEmpty()) {
+            return;
+        }
+        User user = userOpt.get();
         user.setTotalOrders(user.getTotalOrders() + 1);
-        user.setTotalSpent(user.getTotalSpent() + orderTotal);
+        user.setTotalSpent(user.getTotalSpent().add(order.getTotalAmount()));
         userRepository.save(user);
+    }
+
+    // Maps User entity to UserResponse DTO.
+    private UserResponse mapToUserResponse(User user) {
+        return UserResponse.builder()
+                .id(user.getId())
+                .email(user.getEmail())
+                .name(user.getName())
+                .totalOrders(user.getTotalOrders())
+                .totalSpent(user.getTotalSpent())
+                // Add other fields as needed
+                .build();
     }
 }
