@@ -3,11 +3,6 @@ package com.example.userservice.dto;
 import lombok.Builder;
 import lombok.Data;
 
-import java.math.BigDecimal;
-
-/**
- * DTO for user responses.
- */
 @Data
 @Builder
 public class UserResponseDto {
@@ -16,5 +11,5 @@ public class UserResponseDto {
     private String email;
     private String phone;
     private Integer totalOrders;
-    private BigDecimal totalSpent;
+    private Double totalSpent;
 }
