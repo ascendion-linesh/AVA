@@ -3,11 +3,6 @@ package com.example.userservice.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.math.BigDecimal;
-
-/**
- * JPA Entity representing a User in the loyalty rewards system.
- */
 @Entity
 @Table(name = "users")
 @Data
@@ -32,5 +27,5 @@ public class User {
     private Integer totalOrders = 0;
 
     @Column(nullable = false)
-    private BigDecimal totalSpent = BigDecimal.ZERO;
+    private Double totalSpent = 0.0;
 }
