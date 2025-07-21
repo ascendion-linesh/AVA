@@ -1,40 +1,53 @@
 package com.example.rewards.model;
 
-import java.math.BigDecimal;
-import java.util.List;
+import java.time.Instant;
 
 public class OrderEvent {
     private String orderId;
     private String customerId;
-    private List<OrderItem> items;
-    private BigDecimal totalAmount;
-    private String eventType;
-    private long eventTimestamp;
+    private double orderTotal;
+    private Instant orderTimestamp;
+    private String status;
 
-    // Getters and setters
-    public String getOrderId() { return orderId; }
-    public void setOrderId(String orderId) { this.orderId = orderId; }
-    public String getCustomerId() { return customerId; }
-    public void setCustomerId(String customerId) { this.customerId = customerId; }
-    public List<OrderItem> getItems() { return items; }
-    public void setItems(List<OrderItem> items) { this.items = items; }
-    public BigDecimal getTotalAmount() { return totalAmount; }
-    public void setTotalAmount(BigDecimal totalAmount) { this.totalAmount = totalAmount; }
-    public String getEventType() { return eventType; }
-    public void setEventType(String eventType) { this.eventType = eventType; }
-    public long getEventTimestamp() { return eventTimestamp; }
-    public void setEventTimestamp(long eventTimestamp) { this.eventTimestamp = eventTimestamp; }
+    public String getOrderId() {
+        return orderId;
+    }
+    public void setOrderId(String orderId) {
+        this.orderId = orderId;
+    }
+    public String getCustomerId() {
+        return customerId;
+    }
+    public void setCustomerId(String customerId) {
+        this.customerId = customerId;
+    }
+    public double getOrderTotal() {
+        return orderTotal;
+    }
+    public void setOrderTotal(double orderTotal) {
+        this.orderTotal = orderTotal;
+    }
+    public Instant getOrderTimestamp() {
+        return orderTimestamp;
+    }
+    public void setOrderTimestamp(Instant orderTimestamp) {
+        this.orderTimestamp = orderTimestamp;
+    }
+    public String getStatus() {
+        return status;
+    }
+    public void setStatus(String status) {
+        this.status = status;
+    }
 
-    public static class OrderItem {
-        private String productId;
-        private int quantity;
-        private BigDecimal price;
-        // Getters and setters
-        public String getProductId() { return productId; }
-        public void setProductId(String productId) { this.productId = productId; }
-        public int getQuantity() { return quantity; }
-        public void setQuantity(int quantity) { this.quantity = quantity; }
-        public BigDecimal getPrice() { return price; }
-        public void setPrice(BigDecimal price) { this.price = price; }
+    @Override
+    public String toString() {
+        return "OrderEvent{" +
+                "orderId='" + orderId + '\'' +
+                ", customerId='" + customerId + '\'' +
+                ", orderTotal=" + orderTotal +
+                ", orderTimestamp=" + orderTimestamp +
+                ", status='" + status + '\'' +
+                '}';
     }
 }
