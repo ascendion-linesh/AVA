@@ -1,7 +1,7 @@
 package com.example.rewards.controller;
 
-import com.example.rewards.model.OrderEvent;
 import com.example.rewards.model.RewardResponse;
+import com.example.rewards.model.TalonOneSessionRequest;
 import com.example.rewards.service.RewardsService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -9,43 +9,17 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody as SpringRequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
-/**
- * Sample request for /rewards/evaluate:
- * {
- *   "orderId": "ORD-12345",
- *   "customerId": "CUST-001",
- *   "items": [
- *     {"productId": "P-100", "quantity": 2, "price": 19.99},
- *     {"productId": "P-200", "quantity": 1, "price": 49.99}
- *   ],
- *   "totalAmount": 89.97,
- *   "eventType": "ORDER_PLACED",
- *   "eventTimestamp": 1718000000000
- * }
- *
- * Sample response:
- * {
- *   "discount": 10.00,
- *   "appliedCampaigns": ["Summer Sale", "VIP Customer"],
- *   "loyaltyActions": ["Added 100 points"],
- *   "message": "Evaluation successful"
- * }
- *
- * Example Kafka event log:
- * 2024-06-10 12:00:00 [rewards-kafka-listener] INFO  com.example.rewards.service.KafkaOrderListener - Processing order event from Kafka: ORD-12345
- * 2024-06-10 12:00:01 [rewards-kafka-listener] INFO  com.example.rewards.service.KafkaOrderListener - Order event processed and loyalty actions confirmed: ORD-12345
- */
 @RestController
 @RequestMapping("/rewards")
 public class RewardsController {
+    private static final Logger logger = LoggerFactory.getLogger(RewardsController.class);
+
     private final RewardsService rewardsService;
 
     @Autowired
@@ -53,17 +27,24 @@ public class RewardsController {
         this.rewardsService = rewardsService;
     }
 
-    @Operation(summary = "Evaluate cart for discounts and rewards", description = "Evaluates the cart and returns applicable discounts and loyalty rewards.")
+    @Operation(summary = "Evaluate cart session for rewards and discounts")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Discounts and rewards evaluated successfully", content = @Content(mediaType = "application/json", schema = @Schema(implementation = RewardResponse.class))),
-        @ApiResponse(responseCode = "502", description = "Talon.One API error", content = @Content),
-        @ApiResponse(responseCode = "500", description = "Internal server error", content = @Content)
+            @ApiResponse(responseCode = "200", description = "Evaluation successful",
+                    content = @Content(schema = @Schema(implementation = RewardResponse.class))),
+            @ApiResponse(responseCode = "400", description = "Invalid input", content = @Content),
+            @ApiResponse(responseCode = "500", description = "Internal server error", content = @Content)
     })
-    @PostMapping(value = "/evaluate", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<RewardResponse> evaluateCart(
-            @SpringRequestBody(description = "Order event or cart data", required = true, content = @Content(schema = @Schema(implementation = OrderEvent.class)))
-            @org.springframework.web.bind.annotation.RequestBody OrderEvent orderEvent) {
-        RewardResponse response = rewardsService.evaluateCart(orderEvent);
+    @PostMapping("/evaluate")
+    public ResponseEntity<RewardResponse> evaluateCartSession(
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    description = "Cart session data for evaluation",
+                    required = true,
+                    content = @Content(schema = @Schema(implementation = TalonOneSessionRequest.class))
+            )
+            @RequestBody TalonOneSessionRequest request) {
+        logger.info("Received request to evaluate rewards for customerId: {}", request.getCustomerId());
+        RewardResponse response = rewardsService.evaluateSession(request);
+        logger.info("Evaluation completed for customerId: {}. Response: {}", request.getCustomerId(), response);
         return ResponseEntity.ok(response);
     }
 }
