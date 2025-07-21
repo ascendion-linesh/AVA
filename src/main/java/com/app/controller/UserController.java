@@ -1,7 +1,7 @@
 package com.app.controller;
 
-import com.app.model.ProfileDTO;
-import com.app.model.UserStatsUpdateRequest;
+import com.app.model.UserResponse;
+import com.app.model.UpdateUserStatsRequest;
 import com.app.service.UserService;
 import jakarta.validation.Valid;
 lombok.RequiredArgsConstructor;
@@ -22,19 +22,19 @@ public class UserController {
      * Fetch user details by ID.
      */
     @GetMapping("/{id}")
-    public ResponseEntity<ProfileDTO> getUserById(@PathVariable Long id) {
-        ProfileDTO userProfile = userService.getUserProfileById(id);
-        return ResponseEntity.ok(userProfile);
+    public ResponseEntity<UserResponse> getUserById(@PathVariable Long id) {
+        UserResponse user = userService.getUserById(id);
+        return ResponseEntity.ok(user);
     }
 
     /**
-     * Update user's statistics such as totalOrders and totalSpent.
+     * Update user's totalOrders and totalSpent.
      */
     @PutMapping("/{id}")
-    public ResponseEntity<ProfileDTO> updateUserStats(
+    public ResponseEntity<UserResponse> updateUserStats(
             @PathVariable Long id,
-            @RequestBody @Valid UserStatsUpdateRequest request) {
-        ProfileDTO updatedProfile = userService.updateUserStats(id, request);
-        return ResponseEntity.ok(updatedProfile);
+            @Valid @RequestBody UpdateUserStatsRequest request) {
+        UserResponse updatedUser = userService.updateUserStats(id, request);
+        return ResponseEntity.ok(updatedUser);
     }
 }
