@@ -1,28 +1,45 @@
 package com.example.rewards.model;
 
-import java.math.BigDecimal;
 import java.util.List;
 
 public class RewardResponse {
-    private BigDecimal discount;
-    private List<String> appliedCampaigns;
-    private List<String> loyaltyActions;
+    private String customerId;
+    private double discountAmount;
+    private List<String> appliedRewards;
     private String message;
 
-    public RewardResponse() {}
-    public RewardResponse(BigDecimal discount, List<String> appliedCampaigns, List<String> loyaltyActions, String message) {
-        this.discount = discount;
-        this.appliedCampaigns = appliedCampaigns;
-        this.loyaltyActions = loyaltyActions;
+    public String getCustomerId() {
+        return customerId;
+    }
+    public void setCustomerId(String customerId) {
+        this.customerId = customerId;
+    }
+    public double getDiscountAmount() {
+        return discountAmount;
+    }
+    public void setDiscountAmount(double discountAmount) {
+        this.discountAmount = discountAmount;
+    }
+    public List<String> getAppliedRewards() {
+        return appliedRewards;
+    }
+    public void setAppliedRewards(List<String> appliedRewards) {
+        this.appliedRewards = appliedRewards;
+    }
+    public String getMessage() {
+        return message;
+    }
+    public void setMessage(String message) {
         this.message = message;
     }
 
-    public BigDecimal getDiscount() { return discount; }
-    public void setDiscount(BigDecimal discount) { this.discount = discount; }
-    public List<String> getAppliedCampaigns() { return appliedCampaigns; }
-    public void setAppliedCampaigns(List<String> appliedCampaigns) { this.appliedCampaigns = appliedCampaigns; }
-    public List<String> getLoyaltyActions() { return loyaltyActions; }
-    public void setLoyaltyActions(List<String> loyaltyActions) { this.loyaltyActions = loyaltyActions; }
-    public String getMessage() { return message; }
-    public void setMessage(String message) { this.message = message; }
+    @Override
+    public String toString() {
+        return "RewardResponse{" +
+                "customerId='" + customerId + '\'' +
+                ", discountAmount=" + discountAmount +
+                ", appliedRewards=" + appliedRewards +
+                ", message='" + message + '\'' +
+                '}';
+    }
 }
