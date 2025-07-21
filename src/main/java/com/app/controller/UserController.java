@@ -1,16 +1,14 @@
 package com.app.controller;
 
+import com.app.model.User;
+import com.app.model.UserUpdateRequest;
 import com.app.model.UserResponse;
-import com.app.model.UpdateUserStatsRequest;
 import com.app.service.UserService;
-import jakarta.validation.Valid;
+jakarta.validation.Valid;
 lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-/**
- * Controller for user-related endpoints.
- */
 @RestController
 @RequestMapping("/users")
 @RequiredArgsConstructor
@@ -24,6 +22,9 @@ public class UserController {
     @GetMapping("/{id}")
     public ResponseEntity<UserResponse> getUserById(@PathVariable Long id) {
         UserResponse user = userService.getUserById(id);
+        if (user == null) {
+            return ResponseEntity.notFound().build();
+        }
         return ResponseEntity.ok(user);
     }
 
@@ -33,8 +34,11 @@ public class UserController {
     @PutMapping("/{id}")
     public ResponseEntity<UserResponse> updateUserStats(
             @PathVariable Long id,
-            @Valid @RequestBody UpdateUserStatsRequest request) {
+            @RequestBody @Valid UserUpdateRequest request) {
         UserResponse updatedUser = userService.updateUserStats(id, request);
+        if (updatedUser == null) {
+            return ResponseEntity.notFound().build();
+        }
         return ResponseEntity.ok(updatedUser);
     }
 }
